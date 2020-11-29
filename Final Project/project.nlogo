@@ -8,6 +8,7 @@ turtles-own [
   income
   income-tax-rate
   tax-payout
+  wealth-tax-payout
 ]
 
 to setup
@@ -30,18 +31,20 @@ end
 to go
   ;; transact and then update your location
   ask turtles with [ wealth > 0 ] [ transact ]
-  ;; prevent wealthy turtles from moving too far to the right
-  ask turtles [ if wealth <= max-pxcor [ set xcor wealth ] ]
-  if ticks mod pay-period = 0 [ ask turtles [ set wealth wealth + income ] ]
-  if ticks mod tax-period = 0 [ tax-redistribute-focused ]
+  if ticks mod pay-and-tax-period = 0 [
+    ask turtles [set wealth wealth + income]
+    tax-redistribute-focused
+    wealth-tax
+  ]
+  income-change
   update-lorenz-and-gini
   tick
 end
 
 to transact
   ;; give a dollar to another turtle
-  set wealth wealth - 1
-  ask one-of other turtles [ set wealth wealth + 1 ]
+  set wealth wealth - 10
+  ask one-of other turtles [ set wealth wealth + 10 ]
 end
 
 to-report top-10-pct-wealth
@@ -80,27 +83,47 @@ end
 to set-tax-rate
   ask turtles [
     (ifelse
-      income <= 13 [
+      income <= 1.3 [
         set income-tax-rate 0.1
       ]
-      income <= 49 [
+      income <= 4.9 [
         set income-tax-rate 0.15
       ]
-      income <= 128 [
+      income <= 12.8 [
         set income-tax-rate 0.25
       ]
-      income <= 207 [
+      income <= 20.7 [
         set income-tax-rate 0.28
       ]
-      income <= 405 [
+      income <= 40.5 [
         set income-tax-rate 0.33
       ]
-      income <= 432 [
+      income <= 43.2 [
         set income-tax-rate 0.35
       ]
       ;else
       [set income-tax-rate 0.396]
      )
+  ]
+end
+
+to income-change
+  ask turtles [
+    let odds random-float 1
+    (ifelse
+      odds < 0.05 [
+        set income (income * 0.7)
+      ]
+      odds < 0.1 [
+        set income (income * 0.8)
+      ]
+      odds > 0.95 [
+        set income (income * 1.2)
+      ]
+      odds > 0.99 [
+        set income (income * 1.3)
+      ]
+    )
   ]
 end
 
@@ -129,10 +152,30 @@ to tax-redistribute-focused
   let half floor (num-people * 0.5)
   let poor-turtles min-n-of half turtles [ wealth ]
 
-  ;; redistributing taxes evenly across poorest turtles
   let total-taxes sum [tax-payout] of poor-turtles
   let total-avail (total-taxes * (1 - govt-spending-rate)) ;; subtracts off the amount of money spent by governemnt
   let redistribute-value (total-avail / half) ;; distributes remaining funds back to the people
+  ask poor-turtles [ set wealth (wealth + redistribute-value) ]
+end
+
+to wealth-tax
+  ;; taxing richest
+  let top-rich floor (num-people * 0.1)
+  let rich-turtles max-n-of top-rich turtles [wealth]
+
+  ask rich-turtles [
+    if wealth > wealth-tax-threshold [ ;; wealthiest turtles must have at least $x before wealth tax kicks in
+      set wealth-tax-payout (wealth * wealth-tax-rate)
+      set wealth (wealth - wealth-tax-payout)
+    ]
+  ]
+
+  ;; redistributing taxes evenly across poor turtles
+  let half floor (num-people * 0.5)
+  let poor-turtles min-n-of half turtles [ wealth ]
+
+  let total-taxes sum [wealth-tax-payout] of rich-turtles
+  let redistribute-value (total-taxes / half)
   ask poor-turtles [ set wealth (wealth + redistribute-value) ]
 end
 
@@ -141,6 +184,7 @@ end
 to update-lorenz-and-gini
   let sorted-wealths sort [wealth] of turtles
   let total-wealth sum sorted-wealths
+  if total-wealth <= 0 [set total-wealth 1]
   let wealth-sum-so-far 0
   let index 0
   set gini-index-reserve 0
@@ -235,7 +279,7 @@ num-people
 num-people
 2
 1000
-113.0
+746.0
 1
 1
 NIL
@@ -287,7 +331,7 @@ wealth distribution
 wealth
 turtle
 0.0
-500.0
+1000.0
 0.0
 5.0
 true
@@ -346,7 +390,7 @@ start-wealth
 start-wealth
 0
 100
-54.0
+100.0
 1
 1
 NIL
@@ -361,6 +405,58 @@ govt-spending-rate
 govt-spending-rate
 0
 1
+0.5
+.01
+1
+NIL
+HORIZONTAL
+
+SLIDER
+18
+285
+197
+318
+pay-and-tax-period
+pay-and-tax-period
+0
+100
+49.0
+1
+1
+NIL
+HORIZONTAL
+
+MONITOR
+424
+622
+571
+667
+num of in debt turtles
+count turtles with [wealth < 0]
+17
+1
+11
+
+MONITOR
+613
+623
+741
+668
+num of rich turtles
+count turtles with [wealth > 1000]
+17
+1
+11
+
+SLIDER
+19
+239
+191
+272
+wealth-tax-rate
+wealth-tax-rate
+0
+1
 0.2
 .01
 1
@@ -368,31 +464,16 @@ NIL
 HORIZONTAL
 
 SLIDER
-41
-261
+27
+340
 213
-294
-tax-period
-tax-period
+373
+wealth-tax-threshold
+wealth-tax-threshold
 0
-100
-5.0
-5
-1
-NIL
-HORIZONTAL
-
-SLIDER
-45
-315
-217
-348
-pay-period
-pay-period
-0
-100
-20.0
-1
+1000
+330.0
+10
 1
 NIL
 HORIZONTAL
