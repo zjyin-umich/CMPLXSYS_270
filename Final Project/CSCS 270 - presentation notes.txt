@@ -1,0 +1,20 @@
+﻿* We adopted a mixture Simple Economy model and the Wealth Distribution model (both by Uri Wilensky). We added our own income system, tax system, and tax redistribution systems.
+* have a non-fixed amount of money in the system. Will be introducing money based on income, redistributing money in taxes, and eliminating money for govt spending
+* created income brackets and assigned income to the turtles based off 2014 US income percentiles according to WSJ https://graphics.wsj.com/what-percent/
+* assign income tax rates using the 2014 US federal head of household tax brackets https://taxfoundation.org/publications/federal-tax-rates-and-tax-brackets 
+* after taking taxes the govt takes a cut of total (adjusted by govt-spending-rate)
+* set up two tax redistribution systems
+   * one redistributes all remaining collected taxes evenly across all turtles
+   * the other redistributes them evenly across the poorest 50% of turtles
+
+
+* added wealth tax that kicks in for the top 10% of wealthy turtles as long as they earn over 500. there is a slider for the tax rate
+* added a procedure ‘income-change’ that decreases a turtle’s income with 10% chance and increases it with 5% chance (trying to model promotions, raises, and job changes). this currently happens at every tick but could change that
+
+
+
+
+
+
+* consider moving tax brackets as opposed to stagnant i.e your tax bracket is based off of your income since the last tax-period, not how much you make. Currently, we can set it so the turtles earn their salary every 50 ticks, but get fully taxed on that salary every 5 ticks. We can try to adjust this so that they are only taxed on the money they made within those 5 ticks. So most of the time they will only be taxed on the money that exchanges hands through the game of everybody gives somebody a dollar. This is non-consequential if we set pay-period and tax-period equal to each other (like in the real world where you generally pay taxes on each paycheck). But since the model has the freedom to change both, this adjustment will make it more realistic
+   * UPDATE: did not implement this but forced the pay period and tax period to be the same. we can mention this in the presentation though as extension we WOULD make
